@@ -1,0 +1,35 @@
+{
+  "name": "spur-phone",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phone calls as a Switch spur: a Twilio number and an ElevenLabs voice agent that call businesses and report back.",
+  "license": "MIT",
+  "repository": "github:zachsents/spur-phone",
+  "spur": {
+    "name": "phone-call",
+    "command": [
+      "python3",
+      "./server.py"
+    ],
+    "shim": "switchboard",
+    "needs": [
+      "always-on"
+    ],
+    "connections": [
+      {
+        "provider": "twilio",
+        "kind": "key",
+        "label": "Twilio",
+        "scopes": [],
+        "multiple": false
+      },
+      {
+        "provider": "elevenlabs",
+        "kind": "key",
+        "label": "ElevenLabs",
+        "scopes": [],
+        "multiple": false
+      }
+    ]
+  }
+}
