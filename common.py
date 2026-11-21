@@ -35,7 +35,7 @@ def _adopt(path):
     for key, provider in SECRET_KEYS.items():
         if held.get(key):
             app.adopt(provider, accounts[provider], {"secret": held[key]})
-    config = {k: v for k, v in held.items() if k not in SECRET_KEYS and k != "twilio_sid"}
+    config = {k: v for k, v in held.items() if k not in SECRET_KEYS}
     fd = os.open(os.path.join(HOME, "config.json"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as f:
         json.dump(config, f)
@@ -65,7 +65,8 @@ def secrets():
     with open(os.path.join(HOME, "config.json")) as f:
         out = json.load(f)
     global TWILIO_SID
-    TWILIO_SID, out["twilio_token"] = _connection("twilio")
+    account, out["twilio_token"] = _connection("twilio")
+    TWILIO_SID = out.get("twilio_sid") or account
     out["eleven_key"] = _connection("elevenlabs")[1]
     return out
 
