@@ -1,11 +1,11 @@
 {
-  "name": "spur-phone",
+  "name": "switch-ext-phone",
   "version": "0.1.0",
   "private": true,
-  "description": "Phone calls as a Switch spur: a Twilio number and an ElevenLabs voice agent that call businesses and report back.",
+  "description": "Phone calls as a Switch extension: a Twilio number and an ElevenLabs voice agent that call businesses and report back.",
   "license": "MIT",
-  "repository": "github:zachsents/spur-phone",
-  "spur": {
+  "repository": "github:zachsents/switch-ext-phone",
+  "extension": {
     "name": "phone-call",
     "command": [
       "python3",

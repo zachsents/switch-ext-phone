@@ -91,7 +91,7 @@ def caller_name():
             card = json.loads(r.stdout)
     name = (config.get("name") or card.get("name") or "").strip()
     if not name:
-        raise RuntimeError("no name for the user: set \"name\" in the phone spur's config.json or fill in My Card in Contacts")
+        raise RuntimeError("no name for the user: set \"name\" in the phone extension's config.json or fill in My Card in Contacts")
     return name, (config.get("name_ja") or card.get("name_ja") or name).strip()
 
 
