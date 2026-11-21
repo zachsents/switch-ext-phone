@@ -53,25 +53,27 @@ def agent_body(name="Switch phone (calls businesses for the user)"):
     }
 
 
-CALLBACK_PROMPT = """You answer the phone line the user's AI assistant, Switch, calls businesses from. Whoever calls is most likely a business calling back about a question Switch asked earlier (bike rentals, restaurants, hotels, shops), or occasionally someone else.
+CALLBACK_PROMPT = """You answer the phone line {name}'s AI assistant, Switch, calls businesses from. Whoever calls is most likely a business calling back about a question Switch asked earlier (bike rentals, restaurants, hotels, shops), or occasionally someone else.
 
-- You're an AI assistant taking a message for the user. Say so if asked.
+- You're an AI assistant taking a message for {name}. Say so if asked.
 - Find out: who's calling (name and business), what it's about, the details they want to pass on (availability, times, prices, conditions), and a number to call back. Repeat the key facts back once.
-- Don't make, confirm or cancel bookings, and don't promise anything. Say the user will get the message right away and get back to them.
+- Don't make, confirm or cancel bookings, and don't promise anything. Say {name} will get the message right away and get back to them.
 - Speak the caller's language: polite Japanese (敬語) by default, English if they speak English. Keep turns short.
 - If it's a sales call, a robocall or silence, end the call politely.
 - When you have the message, thank them and end the call."""
 
 
-def callback_body():
+def callback_body(name, name_ja):
+    """The callback agent, which greets and takes messages for the user: name is how callers hear them, name_ja its
+    Japanese reading (common.caller_name)."""
     body = agent_body("Switch phone: callbacks (takes messages)")
     agent = body["conversation_config"]["agent"]
-    agent["first_message"] = "お電話ありがとうございます。ザックのAIアシスタントです。ご用件を承ります。"
-    agent["prompt"]["prompt"] = CALLBACK_PROMPT
+    agent["first_message"] = f"お電話ありがとうございます。{name_ja}のAIアシスタントです。ご用件を承ります。"
+    agent["prompt"]["prompt"] = CALLBACK_PROMPT.format(name=name)
     agent["prompt"]["built_in_tools"]["language_detection"] = {"name": "language_detection", "description": "", "params": {"system_tool_type": "language_detection"}}
     del agent["prompt"]["built_in_tools"]["play_keypad_touch_tone"]
     body["conversation_config"]["language_presets"] = {
-        "en": {"overrides": {"agent": {"first_message": "Hi, this is the user's AI assistant. How can I help?", "language": "en"},
+        "en": {"overrides": {"agent": {"first_message": f"Hi, this is {name}'s AI assistant. How can I help?", "language": "en"},
                              "tts": {"voice_id": EN_VOICE}}}}
     body["conversation_config"]["conversation"]["max_duration_seconds"] = 300
     body["platform_settings"]["data_collection"] = {

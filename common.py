@@ -56,6 +56,30 @@ def secrets():
     return out
 
 
+ME_CARD = ("const c = Application('Contacts').myCard(); "
+           "JSON.stringify(c ? {name: c.nickname() || c.firstName() || '', name_ja: c.phoneticFirstName() || ''} : {})")
+
+
+def caller_name():
+    """(name, name_ja): the user's name as callers hear it, and how to say it in Japanese (e.g. katakana). From
+    SB_HOME/config.json's "name" and "name_ja", else this Mac's Contacts card for the user (My Card: its nickname or
+    first name, and its phonetic first name)."""
+    path = os.path.join(HOME, "config.json")
+    config = {}
+    if os.path.exists(path):
+        with open(path) as f:
+            config = json.load(f)
+    card = {}
+    if not (config.get("name") and config.get("name_ja")):
+        r = subprocess.run(["/usr/bin/osascript", "-l", "JavaScript", "-e", ME_CARD], capture_output=True, text=True, timeout=60)
+        if r.returncode == 0 and r.stdout.strip():
+            card = json.loads(r.stdout)
+    name = (config.get("name") or card.get("name") or "").strip()
+    if not name:
+        raise RuntimeError("no name for the user: set \"name\" in the phone spur's config.json or fill in My Card in Contacts")
+    return name, (config.get("name_ja") or card.get("name_ja") or name).strip()
+
+
 def http(method, url, body=None, headers=None, form=False, timeout=30):
     data = None
     headers = dict(headers or {})

@@ -12,4 +12,4 @@ on the first machine with what it needs (`always-on`).
 
 ## Setup
 
-Set `PHONE_TWILIO_SID` and `PHONE_LINE` (the number, E.164) in the spur's environment. Put a `secrets.json` in its `home` once, with `twilio_token`, `eleven_key`, `agent_id`, `callback_agent_id` and `phone_number_id`: on its next start the keys go to Switch's connections, and the ids stay as `config.json`.
+Set `PHONE_TWILIO_SID` and `PHONE_LINE` (the number, E.164) in the spur's environment. Put a `secrets.json` in its `home` once, with `twilio_token`, `eleven_key`, `agent_id`, `callback_agent_id` and `phone_number_id`: on its next start the keys go to Switch's connections, and the ids stay as `config.json`. Calls name the user from `config.json`'s `name` and `name_ja` (how to say it in Japanese), else from My Card in Contacts on the Mac it runs on (nickname or first name, and phonetic first name).

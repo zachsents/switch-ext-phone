@@ -1,7 +1,7 @@
 """What the phone appendage does for a request: place a call, follow one, and say how the line stands."""
 import datetime, json, os, re, sys, time
 
-from common import HOME, LINE, eleven, health, keep_audio, progress, record, secrets, summarize, twilio, transcript_lines
+from common import HOME, LINE, caller_name, eleven, health, keep_audio, progress, record, secrets, summarize, twilio, transcript_lines
 from agent_config import EN_VOICE, JA_VOICE
 
 LANGS = {"ja": "Japanese", "en": "English"}
@@ -73,24 +73,24 @@ def local_hour(e164):
     return None
 
 
-def money_rules(limit, lang):
+def money_rules(limit, lang, name, name_ja):
     """The brief's hard spending limit, for a call that may book: the one rule the caller never bends."""
     cap = money(*limit)
-    refusal = ("「申し訳ございません。ザックが了承している金額を超えてしまうため、こちらではお受けできません。"
+    refusal = (f"「申し訳ございません。{name_ja}が了承している金額を超えてしまうため、こちらではお受けできません。"
                "変更やご請求はせずにお待ちいただけますでしょうか。本人に確認して、改めてお電話いたします。」"
                if lang == "ja" else
-               "\"I'm sorry, that's more than the user approved, so I can't agree to it. Please don't make the change or "
+               f"\"I'm sorry, that's more than {name} approved, so I can't agree to it. Please don't make the change or "
                "charge anything. I'll check with him and call back.\"")
     allowed = (f"- If the total is {cap} or less, you may agree: say the total back once (\"So that's [total] in all\") and go ahead.\n"
                if limit[0] > 0 else
-               "- the user hasn't approved paying anything, so if anything at all would be charged (a fee, a deposit, a card guarantee charge), you can't agree to it.\n")
+               f"- {name} hasn't approved paying anything, so if anything at all would be charged (a fee, a deposit, a card guarantee charge), you can't agree to it.\n")
     return f"""
-# Money: The user's limit, which you never go over
-The user approved paying at most {cap} on this call, all in: every fee, fare or price difference, tax, surcharge, deposit, upgrade and separate charge, added together. This limit is absolute. Nothing lets you go over it: not a small difference ("it's only a few dollars more"), not a fare increase or a fee you weren't told about, not a reason that sounds fair, and not their having already started.
+# Money: {name}'s limit, which you never go over
+{name} approved paying at most {cap} on this call, all in: every fee, fare or price difference, tax, surcharge, deposit, upgrade and separate charge, added together. This limit is absolute. Nothing lets you go over it: not a small difference ("it's only a few dollars more"), not a fare increase or a fee you weren't told about, not a reason that sounds fair, and not their having already started.
 - Before you agree to anything that costs money, ask for the total that will be charged, all in, and add up every charge they mention yourself.
 {allowed}- If the total is more than {cap}, even by a little, or they can't tell you the total: do NOT agree, and never say "that's fine", "okay" or "go ahead" to it. Say: {refusal} Then ask what the total would be and how long the price or the seat holds, thank them, and end the call.
 - If they bring up another charge after you've agreed (a fare increase, a tax, a second charge), add it to the total and decide again by the same rule before they process it.
-- If they say they've already charged more than {cap}, say the user didn't approve that and ask them to reverse it, and note exactly what they say.
+- If they say they've already charged more than {cap}, say {name} didn't approve that and ask them to reverse it, and note exactly what they say.
 """
 
 
@@ -99,32 +99,33 @@ def brief(args, lang, limit=(0.0, "USD")):
     goal = args["goal"].strip()
     context = (args.get("context") or "").strip()
     may_book = bool(args.get("may_book"))
+    name, name_ja = caller_name()
     if lang == "ja":
         intro = ("Open, once they've answered, with a short polite introduction in natural phone Japanese, e.g. "
-                 "「お忙しいところ恐れ入ります。ザックというお客様の代わりにお電話しております、AIアシスタントです。」 "
+                 f"「お忙しいところ恐れ入ります。{name_ja}というお客様の代わりにお電話しております、AIアシスタントです。」 "
                  "then ask your question straight away. Speak polite 敬語 (です/ます, 恐れ入りますが, よろしいでしょうか), "
-                 "short sentences, the way a considerate customer would. Say the user's name as ザック. "
+                 f"short sentences, the way a considerate customer would. Say {name}'s name as {name_ja}. "
                  "End with 「お忙しいところありがとうございました。失礼いたします。」")
     else:
         intro = ("Open, once they've answered, with a short friendly introduction, e.g. \"Hi, I'm an AI assistant "
-                 "calling on behalf of a customer, the user. This call is recorded.\" (always say it's recorded) then ask your question straight away.")
+                 f"calling on behalf of a customer, {name}. This call is recorded.\" (always say it's recorded) then ask your question straight away.")
     booking = ("You MAY make the booking, reservation or change described in the goal, within exactly the terms given there "
-               "and the user's money limit; confirm every detail back before agreeing, and get any confirmation number or name "
+               f"and {name}'s money limit; confirm every detail back before agreeing, and get any confirmation number or name "
                "it's under. It isn't done until they say it's done: stay on the line while they make it, then confirm what's "
                "booked and the total charged. If they start to wrap up before saying it's done or giving a confirmation "
                "number, ask for it before you say goodbye."
                if may_book else
-               "Do NOT make, hold or cancel any reservation, booking, order or payment, and don't promise the user will come. "
-               "If they offer to hold something, thank them, say the user will decide and call back, and note what they offered "
+               f"Do NOT make, hold or cancel any reservation, booking, order or payment, and don't promise {name} will come. "
+               f"If they offer to hold something, thank them, say {name} will decide and call back, and note what they offered "
                "(how long they'd hold it, under what name).")
-    return f"""You are Switch, the user's AI assistant, on a phone call you placed to {business} for him. You speak {LANGS[lang]} on this call.
+    return f"""You are Switch, {name}'s AI assistant, on a phone call you placed to {business} for him. You speak {LANGS[lang]} on this call.
 
 # Why you're calling
 {goal}
 
 # What you may tell them if it helps or they ask
-{context or "Only that you're calling for a customer named the user. You don't have other details; say the user will follow up if they need more."}
-{money_rules(limit, lang) if may_book else ""}
+{context or f"Only that you're calling for a customer named {name}. You don't have other details; say {name} will follow up if they need more."}
+{money_rules(limit, lang, name, name_ja) if may_book else ""}
 # How to handle the call
 - Wait for them to answer and speak first. {intro}
 - You are an AI and say so in your introduction. If asked, never claim to be human.
@@ -134,7 +135,7 @@ def brief(args, lang, limit=(0.0, "USD")):
 - Before hanging up, confirm the key facts back one at a time in a short list, and listen for corrections; if they correct something, repeat the corrected figure back once more.
 - {booking}
 - Never give card numbers, addresses, ID numbers or anyone's personal details beyond what's listed above.
-- If they ask something you don't know, say the user will check and call back. Don't invent details.
+- If they ask something you don't know, say {name} will check and call back. Don't invent details.
 - Phone menu (IVR): use the keypad tool to reach a person or the right department.
 - Holds: when they put you on hold, transfer you, or ask you to wait ("give me a moment", "let me check", 少々お待ちください), say once that you'll wait, then stay silent with the skip_turn tool until they speak again. Silence and hold music are normal; never end the call while they're looking something up or making a change, and don't keep checking in.
 - A recording or voicemail (e.g. closed today, outside hours): listen to the whole message for hours or other numbers, leave no message, then end the call.
