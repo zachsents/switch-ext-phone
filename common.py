@@ -6,7 +6,6 @@ import sbmcp
 
 HOME = os.environ.get("SB_HOME") or os.path.dirname(os.path.abspath(__file__))
 TWILIO_SID = os.environ.get("PHONE_TWILIO_SID", "")
-LINE = os.environ.get("PHONE_LINE", "")  # the Twilio number calls go out from (and come back to)
 
 
 SWITCH = bool(os.environ.get("SWITCH_MACHINE"))
@@ -28,15 +27,30 @@ def _adopt(path):
     """Hands the keys a Switchboard copy kept to the user's connections, then keeps only the ids, as config."""
     with open(path) as f:
         held = json.load(f)
-    accounts = {"twilio": TWILIO_SID or "twilio", "elevenlabs": "elevenlabs"}
+    # The Twilio account is named by its SID (an older copy kept it in code; its file says it as twilio_sid).
+    sid = held.get("twilio_sid") or TWILIO_SID
+    if held.get("twilio_token") and not str(sid).startswith("AC"):
+        raise RuntimeError(f"{path} has a Twilio token but no twilio_sid (AC…) to name its account")
+    accounts = {"twilio": sid, "elevenlabs": "elevenlabs"}
     for key, provider in SECRET_KEYS.items():
         if held.get(key):
             app.adopt(provider, accounts[provider], {"secret": held[key]})
-    config = {k: v for k, v in held.items() if k not in SECRET_KEYS}
+    config = {k: v for k, v in held.items() if k not in SECRET_KEYS and k != "twilio_sid"}
     fd = os.open(os.path.join(HOME, "config.json"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as f:
         json.dump(config, f)
     os.remove(path)
+
+
+def line():
+    """The Twilio number calls go out from (and come back to): config.json's "line", else PHONE_LINE."""
+    path = os.path.join(HOME, "config.json")
+    if os.path.exists(path):
+        with open(path) as f:
+            got = json.load(f).get("line")
+        if got:
+            return got
+    return os.environ.get("PHONE_LINE", "")
 
 
 def secrets():
@@ -115,7 +129,7 @@ def health():
     """Whether the line can place a call now: Twilio's credit and the number still on the account, ElevenLabs' key,
     the caller agent, the number there with outbound calls, callbacks reaching the message-taking agent, and credit left."""
     s = secrets()
-    out, problems = {"number": LINE}, []
+    out, problems = {"number": line()}, []
 
     def check(what, f):
         try:
@@ -129,9 +143,9 @@ def health():
         out["twilio_balance_usd"] = round(balance, 2)
         if balance < 1:
             problems.append(f"Twilio has ${balance:.2f} left, too little for a call")
-    numbers = check("Twilio number", lambda: twilio("GET", "/IncomingPhoneNumbers.json?PhoneNumber=" + urllib.parse.quote(LINE))["incoming_phone_numbers"])
+    numbers = check("Twilio number", lambda: twilio("GET", "/IncomingPhoneNumbers.json?PhoneNumber=" + urllib.parse.quote(line()))["incoming_phone_numbers"])
     if numbers is not None and not numbers:
-        problems.append(f"{LINE} is no longer on the Twilio account")
+        problems.append(f"{line()} is no longer on the Twilio account")
     check("ElevenLabs caller agent", lambda: eleven("GET", f"/v1/convai/agents/{s['agent_id']}")["agent_id"])
     phone = check("ElevenLabs phone number", lambda: eleven("GET", f"/v1/convai/phone-numbers/{s['phone_number_id']}"))
     if phone:

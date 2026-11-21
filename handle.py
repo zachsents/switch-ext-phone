@@ -1,7 +1,7 @@
 """What the phone appendage does for a request: place a call, follow one, and say how the line stands."""
 import datetime, json, os, re, sys, time
 
-from common import HOME, LINE, caller_name, eleven, health, keep_audio, progress, record, secrets, summarize, twilio, transcript_lines
+from common import HOME, caller_name, line, eleven, health, keep_audio, progress, record, secrets, summarize, twilio, transcript_lines
 from agent_config import EN_VOICE, JA_VOICE
 
 LANGS = {"ja": "Japanese", "en": "English"}
@@ -173,7 +173,7 @@ def place_call(args):
         return {"dry_run": True, "to": to, "language": lang, "max_minutes": max_minutes, "max_spend": money(*limit),
                 "keywords": override["asr"]["keywords"], "brief": prompt}
 
-    progress(f"Dialing {args.get('business') or to} ({to}) in {LANGS[lang]} from {LINE}"
+    progress(f"Dialing {args.get('business') or to} ({to}) in {LANGS[lang]} from {line()}"
              + (f", may spend up to {money(*limit)}" if args.get("may_book") else ""))
     return dial(s, to, lang, args, override, max_minutes, limit)
 

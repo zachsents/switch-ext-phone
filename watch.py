@@ -1,7 +1,7 @@
 """Watches for calls back to the line: each finished one becomes a record in comms/phone and a notification."""
 import json, os, time
 
-from common import HOME, LINE, eleven, health, keep_audio, record, secrets, summarize
+from common import HOME, eleven, line, health, keep_audio, record, secrets, summarize
 
 STATE = os.path.join(HOME, "watch-state.json")
 EVERY = 120
@@ -56,10 +56,10 @@ def checkup(state):
     h = health()
     state["balance_at"] = time.time()
     b = h.get("twilio_balance_usd")
-    summary = LINE + (f", Twilio credit ${b:.2f}" if b is not None else "")
+    summary = line() + (f", Twilio credit ${b:.2f}" if b is not None else "")
     summary += ", ready to call" if h["ok"] else ": " + "; ".join(h["problems"])
     record("comms/phone", "observation", {"entity": "phone-line:switch", "kind": "phone-line", "name": "Switch's phone line",
-           "summary": summary[:400], "facts": {**h, "number": LINE}})
+           "summary": summary[:400], "facts": {**h, "number": line()}})
     if not h["ok"] and not state.get("warned_broken"):
         notify("My phone line can't place calls", "; ".join(h["problems"])[:300])
         state["warned_broken"] = True
