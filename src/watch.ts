@@ -293,7 +293,7 @@ export const watching = Layer.effectDiscard(
           } else {
             const e = Cause.squash(done.cause)
             mark(part, named(e))
-            progress(`watch: ${name}: ${errorText(e)}`)
+            yield* progress(`watch: ${name}: ${errorText(e)}`)
           }
         }
         const trouble = failing(state)
@@ -303,7 +303,7 @@ export const watching = Layer.effectDiscard(
             said = trouble
             lastBeat = now()
           } else {
-            progress(`watch: heartbeat: ${errorText(Cause.squash(beat.cause))}`)
+            yield* progress(`watch: heartbeat: ${errorText(Cause.squash(beat.cause))}`)
           }
         }
         yield* Effect.sleep(EVERY_S * 1000)

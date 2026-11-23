@@ -11,7 +11,7 @@ import {
 } from "node:fs"
 import path from "node:path"
 import { Cause, Data, Effect, Result, Schema } from "effect"
-import { AppEvents, Host, writeFileAtomic } from "switch-ext-kit"
+import { AppEvents, Host, Progress, writeFileAtomic } from "switch-ext-kit"
 import type { Message, Sender } from "switch-ext-kit"
 
 import { Call, Line } from "./events.ts"
@@ -336,10 +336,13 @@ export const health = Effect.gen(function* checking() {
   return checked
 })
 
-/** Says how a call is going, on stderr. */
-export const progress = (said: string) => {
-  process.stderr.write(`${said}\n`)
-}
+/** Says how a call is going: on stderr, and to whoever called the tool (its progress). */
+export const progress = (said: string) =>
+  Effect.gen(function* saying() {
+    process.stderr.write(`${said}\n`)
+    const tell = yield* Progress
+    yield* tell(said)
+  })
 
 /** Sends what happened as an event, for its keeper to record in comms/phone. */
 export const record = (body: Json, about?: readonly string[], importance?: number) =>
@@ -426,7 +429,7 @@ export const keepAudio = (cid: string, tries = 5) =>
           }),
         )
         if (Result.isFailure(got)) {
-          progress(`(recording not ready: ${got.failure})`)
+          yield* progress(`(recording not ready: ${got.failure})`)
         }
       }
       if (existsSync(file)) {
@@ -448,7 +451,7 @@ export const keepAudio = (cid: string, tries = 5) =>
       if (Result.isSuccess(stored)) {
         out.blob = stored.success
       } else {
-        progress(`(couldn't store the recording: ${stored.failure})`)
+        yield* progress(`(couldn't store the recording: ${stored.failure})`)
       }
     }
     return out

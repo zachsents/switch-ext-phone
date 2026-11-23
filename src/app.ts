@@ -77,6 +77,15 @@ const CallInput = Schema.Struct({
   allow_late: Schema.optionalKey(
     described(Schema.Boolean, "Call outside 08:00-21:00 local time anyway."),
   ),
+  keywords: Schema.optionalKey(
+    described(
+      Schema.Array(Schema.String),
+      "Words the recognizer should expect, beside the business's name.",
+    ),
+  ),
+  ring_secs: Schema.optionalKey(
+    described(Schema.Finite, "How long it rings before giving up, in seconds. Default 40."),
+  ),
 })
 
 const ResultInput = Schema.Struct({

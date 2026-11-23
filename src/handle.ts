@@ -67,6 +67,8 @@ export interface CallArgs {
   readonly thread?: string
   readonly dry_run?: boolean
   readonly allow_late?: boolean
+  readonly keywords?: readonly string[]
+  readonly ring_secs?: number
 }
 
 /** The most the user approved paying, and its currency. */
@@ -233,11 +235,11 @@ ${mayBook ? moneyRules(limit, lang, name, nameJa) : ""}
 `
   })
 
-/** Words the recognizer should expect: the business's name. */
+/** Words the recognizer should expect: the business's name and whatever the caller adds. */
 const keywords = (args: CallArgs) => {
   const business = textOr(args.business, "")
   const words = business ? business.split(/[\s,、・()（）]+/u).filter((w) => w.length > 1) : []
-  return [...new Set(words)].slice(0, 50)
+  return [...new Set([...(args.keywords ?? []), ...words])].slice(0, 50)
 }
 
 const overrideFor = (args: CallArgs, lang: Lang, maxMinutes: number, limit: Limit) =>
@@ -286,7 +288,7 @@ export const placeCall = (args: CallArgs) =>
         brief: override.agent.prompt.prompt,
       }
     }
-    progress(
+    yield* progress(
       `Dialing ${textOr(args.business, to)} (${to}) in ${LANGS[lang]} from ${line()}${args.may_book === true ? `, may spend up to ${money(limit)}` : ""}`,
     )
     return yield* dial(s, to, lang, args, override, maxMinutes, limit)
@@ -357,7 +359,7 @@ const dial = (
         agent_phone_number_id: yield* need(s, "phone_number_id"),
         to_number: to,
         conversation_initiation_client_data: { conversation_config_override: override },
-        telephony_call_config: { ringing_timeout_secs: 40 },
+        telephony_call_config: { ringing_timeout_secs: Math.trunc(args.ring_secs ?? 40) },
       }),
     )
     if (!truthy(r.success) || !truthy(r.conversation_id)) {
@@ -366,7 +368,7 @@ const dial = (
     const cid = str(r.conversation_id)
     const callSid = truthy(r.callSid) ? str(r.callSid) : null
     keepTerms(cid, args, limit)
-    progress(`Ringing (conversation ${cid})`)
+    yield* progress(`Ringing (conversation ${cid})`)
     const result = yield* follow(cid, callSid, started + maxMinutes * 60 + 180)
     Object.assign(result, {
       to,
@@ -393,13 +395,13 @@ export const follow = (cid: string, callSid: string | null, deadline?: number) =
       yield* Effect.sleep(3000)
       const got = yield* Effect.result(eleven("GET", `/v1/convai/conversations/${cid}`))
       if (Result.isFailure(got)) {
-        progress(`(waiting: ${got.failure.message})`)
+        yield* progress(`(waiting: ${got.failure.message})`)
         continue
       }
       conv = obj(got.success)
       const lines = transcriptLines(conv)
       for (const l of lines.slice(seen)) {
-        progress(`${l.who}: ${l.text}`)
+        yield* progress(`${l.who}: ${l.text}`)
       }
       seen = lines.length
       if (callSid !== null && lines.length === 0) {
@@ -408,7 +410,7 @@ export const follow = (cid: string, callSid: string | null, deadline?: number) =
           twilioStatus = get(obj(call.success), "status")
         }
         if (ended(twilioStatus)) {
-          progress(`The call ended: ${str(twilioStatus)}`)
+          yield* progress(`The call ended: ${str(twilioStatus)}`)
           // Give ElevenLabs a moment to close the conversation, then hand back what we know.
           yield* Effect.sleep(4000)
           const again = yield* Effect.result(eleven("GET", `/v1/convai/conversations/${cid}`))
