@@ -170,6 +170,7 @@ app = sbmcp.Server("phone-call", version="7", connections=[
 ], instructions="Switch's phone: places calls to businesses (Japanese or English) from the user's Twilio number through an ElevenLabs voice agent, holds the conversation toward a goal, and returns the answer, transcript and recording. A call that may book is held to the most the user approved paying (max_spend), and its result warns if it agreed to more anyway. Every call, out or back in, is recorded: its audio (both sides, mp3) is kept as a blob in the call's record (facts.recording) and in its folder, beside the transcript. Takes messages when they call back. Checks every 6 hours that it can still place calls (Twilio credit and number, the ElevenLabs agent and credit) and records it as phone-line:switch.")
 app.event("call", "A call it placed or took, once it's over: who, what was said, the answer, the recording", stream="comms/phone", kind="observation")
 app.event("line", "How the line stands: Twilio and ElevenLabs credit, the number, callbacks", stream="comms/phone", kind="observation")
+app.event("heartbeat", "How it is itself", stream="vitals/phone-call", kind="observation", retention="signal")
 
 current = threading.local()
 """The call a thread works for (its Context), so what it says on the way is that call's progress."""
