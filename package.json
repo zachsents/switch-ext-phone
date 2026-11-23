@@ -5,13 +5,32 @@
   "description": "Phone calls as a Switch extension: a Twilio number and an ElevenLabs voice agent that call businesses and report back.",
   "license": "MIT",
   "repository": "github:zachsents/switch-ext-phone",
+  "type": "module",
+  "scripts": {
+    "start": "bun src/main.ts",
+    "typecheck": "tsgo --noEmit",
+    "lint": "oxlint --type-aware --fix --fix-suggestions",
+    "format": "oxfmt --write .",
+    "fix": "bun run lint && bun run format",
+    "captions": "ui-captions src",
+    "check": "bun run typecheck && bun run captions && bun run fix"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
+    "effect": "^4.1.5",
+    "switch-ext-kit": "github:zachsents/switch-ext-kit#16aa6f1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.5",
+    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
+    "oxfmt": "^0.80.0",
+    "oxlint": "^1.95.0",
+    "oxlint-tsgolint": "^7.0.2008",
+    "ultracite": "^8.3.1"
+  },
   "extension": {
     "name": "phone-call",
-    "command": [
-      "python3",
-      "./server.py"
-    ],
-    "shim": "switchboard",
+    "main": "src/main.ts",
     "needs": [
       "always-on"
     ],

@@ -2,8 +2,7 @@
 
 A Twilio number and an ElevenLabs voice agent that call businesses and report back.
 
-A [Switch](https://switch.ax) extension: a Python MCP server (`sbmcp.py`, a Switchboard appendage) that Switch runs through
-[switch-ext-kit](https://github.com/zachsents/switch-ext-kit)'s shim. Its messages carry who sent them, for Switch's inbox and Contacts.
+A [Switch](https://switch.ax) extension in TypeScript and Effect on [switch-ext-kit](https://github.com/zachsents/switch-ext-kit). Its messages carry who sent them, for Switch's inbox and Contacts.
 
 ## Install
 
