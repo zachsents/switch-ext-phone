@@ -31,6 +31,7 @@
   "extension": {
     "name": "phone-call",
     "main": "src/main.ts",
+    "heartbeat": 420000,
     "needs": [
       "always-on"
     ],
