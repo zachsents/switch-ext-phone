@@ -1,3 +1,5 @@
+**Moved to [zachsents/switch](https://github.com/zachsents/switch/tree/main/extensions/phone).** This repo is archived.
+
 # switch-ext-phone
 
 A Twilio number and an ElevenLabs voice agent that call businesses and report back.
